@@ -7,10 +7,15 @@ set BIN_DIR="%~dp0\bin"
 if not exist %BUILD_DIR% mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 cmake "%~dp0\awe_app" -G %CMAKE_GEN%
+IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cmake --build . --config Release
+IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 ::cmake --open .
 popd
 
 :: INSTALL: copy bin files
 if not exist %BIN_DIR% mkdir %BIN_DIR%
 robocopy %BUILD_DIR%\awe_try\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\meminfo\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\awe\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\lp\Release %BIN_DIR% *.exe

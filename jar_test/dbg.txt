@@ -1,0 +1,10 @@
+bp mydriver!myFunction ".if (@eax & 0x0`ffffffff) = 0x0`c0004321  {} .else {gc}"
+bp mydriver!myFunction "j (@eax & 0x0`ffffffff) = 0x0`c0004321  '';'gc'" 
+
+bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo 'Breakpoint hit, condition'} .else {gc}" 
+
+bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo 'Breakpoint hit, r8=@r8'} .else {gc}" 
+
+bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo Breakpoint hit; r r8} .else {gc}"
+bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo !!!Breakpoint hit!!!; r r8; gc} .else {gc}"
+

@@ -7,3 +7,5 @@ project ("awe_try")
 
 # Include sub-projects.
 add_subdirectory ("awe_try")
+add_subdirectory ("meminfo")
+add_subdirectory ("size")
