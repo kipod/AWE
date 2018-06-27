@@ -1,3 +1,8 @@
+::::::::::::::::::::::::::::::::::::
+:: x64 Software Conventions https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions
+:: Register usage RCX, RDX, R8, R9 
+
+
 bp mydriver!myFunction ".if (@eax & 0x0`ffffffff) = 0x0`c0004321  {} .else {gc}"
 bp mydriver!myFunction "j (@eax & 0x0`ffffffff) = 0x0`c0004321  '';'gc'" 
 
@@ -8,3 +13,6 @@ bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo 'Breakpoint hit, r
 bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo Breakpoint hit; r r8} .else {gc}"
 bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo !!!Breakpoint hit!!!; r r8; gc} .else {gc}"
 
+bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r r8} .else {gc}"
+bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r rcx; r r8; dd rdx} .else {gc}"
+bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r rcx; r r8; dq rdx} .else {gc}"

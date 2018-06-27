@@ -3,12 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-set(SOURCES
-../MemInfo.cpp
-../MemInfo.h
-)
+# Add source to this project's executable.
+add_executable (MemInfo_7 ${SOURCES})
 
-# Include sub-projects.
-add_subdirectory ("7")
-add_subdirectory ("8")
-
+# TODO: Add tests and install targets if needed.

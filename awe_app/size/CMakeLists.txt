@@ -3,7 +3,7 @@
 #
 
 set(SOURCES
-../get_size.cpp
+../../get_size.cpp
 )
 
 # Include sub-projects.

@@ -10,12 +10,17 @@ cmake "%~dp0\awe_app" -G %CMAKE_GEN%
 IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cmake --build . --config Release
 IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+cmake --build . --config Debug
+IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 ::cmake --open .
 popd
 
 :: INSTALL: copy bin files
 if not exist %BIN_DIR% mkdir %BIN_DIR%
 robocopy %BUILD_DIR%\awe_try\Release %BIN_DIR% *.exe
-robocopy %BUILD_DIR%\meminfo\Release %BIN_DIR% *.exe
-robocopy %BUILD_DIR%\size\awe\Release %BIN_DIR% *.exe
-robocopy %BUILD_DIR%\size\lp\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\meminfo\7\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\meminfo\8\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\awe\7\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\awe\8\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\lp\7\Release %BIN_DIR% *.exe
+robocopy %BUILD_DIR%\size\lp\8\Release %BIN_DIR% *.exe

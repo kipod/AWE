@@ -1,15 +1,4 @@
-# CMakeList.txt : CMake project for awe_size, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
 
-include_directories(../..)
-
-#set(SOURCES
-#../get_size.cpp
-#)
-
-# Add source to this project's executable.
-add_executable (awe_size ${SOURCES})
-
-# TODO: Add tests and install targets if needed.
+# Include sub-projects.
+add_subdirectory ("7")
+add_subdirectory ("8")

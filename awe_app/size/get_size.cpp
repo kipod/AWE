@@ -228,7 +228,7 @@ NTSTATUS PfiQueryPrivateSources() {
 	ULONG ResultLength = 0;
 
 	/* Version 2 for Beta 2, Version 3 for RTM */
-	PrivateSourcesQuery.Version = 8; //3;
+	PrivateSourcesQuery.Version = PF_PRIVSOURCE_QUERY_REQUEST_VERSION; //3;
 
 	PfiBuildSuperfetchInfo(&SuperfetchInfo,
 		&PrivateSourcesQuery,
@@ -241,7 +241,7 @@ NTSTATUS PfiQueryPrivateSources() {
 		&ResultLength);
 	if (Status == STATUS_BUFFER_TOO_SMALL) {
 		g_MmPrivateSources = static_cast<PPF_PRIVSOURCE_QUERY_REQUEST>(::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ResultLength));
-		g_MmPrivateSources->Version = 8;
+		g_MmPrivateSources->Version = PF_PRIVSOURCE_QUERY_REQUEST_VERSION;
 
 		PfiBuildSuperfetchInfo(&SuperfetchInfo,
 			g_MmPrivateSources,
@@ -375,8 +375,16 @@ NTSTATUS PfiQueryPfnDatabase() {
 			// Get the process structure
 			//
 			PPF_PROCESS Process;
-		TryAgain:
 			Process = PfiFindProcess(Pfn1->u1.e4.UniqueProcessKey);
+#if 0 // takes long time on server
+			if (!Process) {
+				//
+				// May be... The private sources changed during a query -- reload private sources
+				//
+				PfiQueryPrivateSources();
+				Process = PfiFindProcess(Pfn1->u1.e4.UniqueProcessKey);
+			}
+#endif
 			if (Process) {
 				//
 				// Add this to the process' PFN array
@@ -395,18 +403,10 @@ NTSTATUS PfiQueryPfnDatabase() {
 					Process->PrivatePages *= 2;
 					PreviousEntry->Flink = NextEntry->Blink = &Process->ProcessLinks;
 				}
-
 				//
 				// One more PFN
 				//
 				Process->ProcessPfnCount++;
-			}
-			else {
-				//
-				// The private sources changed during a query -- reload private sources
-				//
-				PfiQueryPrivateSources();
-				goto TryAgain;
 			}
 		}
 	}
@@ -476,7 +476,8 @@ int main() {
 
 	if (NT_SUCCESS(status)) {
 		status = PfiQueryPfnDatabase();
-		if (NT_SUCCESS(status)) {
+		if (NT_SUCCESS(status))
+		{
 #if defined(AWE_APP_SHOW_LARGE_PAGES)
 			printf("%lld\n", ((g_MmPageUseCounts[MMPFNUSE_LARGEPAGE][ActiveAndValid] << PAGE_SHIFT) >> 10));
 #else

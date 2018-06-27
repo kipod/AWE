@@ -57,11 +57,12 @@ void PrintUsage() {
 }
 
 void PfiBuildSuperfetchInfo(IN PSUPERFETCH_INFORMATION SuperfetchInfo, IN PVOID Buffer, IN ULONG Length, IN SUPERFETCH_INFORMATION_CLASS InfoClass) {
+	::RtlZeroMemory(SuperfetchInfo, sizeof(SUPERFETCH_INFORMATION));
 	SuperfetchInfo->Version = SUPERFETCH_VERSION;
 	SuperfetchInfo->Magic = SUPERFETCH_MAGIC;
-	SuperfetchInfo->Data = Buffer;
-	SuperfetchInfo->Length = Length;
 	SuperfetchInfo->InfoClass = InfoClass;
+	SuperfetchInfo->Data = Buffer;
+	SuperfetchInfo->Length = Length;	
 }
 
 NTSTATUS PfiQueryMemoryRanges() {
@@ -178,8 +179,8 @@ NTSTATUS PfiInitializePfnDatabase() {
 	// Calculate maximum amount of memory required
 	//
 	PfnCount = MmHighestPhysicalPageNumber + 1;
-	MmPfnDatabaseSize = FIELD_OFFSET(PF_PFN_PRIO_REQUEST, PageData) +
-		PfnCount * sizeof(MMPFN_IDENTITY);
+	MmPfnDatabaseSize = FIELD_OFFSET(PF_PFN_PRIO_REQUEST, PageData);
+	MmPfnDatabaseSize += PfnCount * sizeof(MMPFN_IDENTITY);
 
 	//
 	// Build the PFN List Information Request
@@ -294,7 +295,7 @@ NTSTATUS PfiQueryPrivateSources() {
 	ULONG ResultLength = 0;
 
 	/* Version 2 for Beta 2, Version 3 for RTM */
-	PrivateSourcesQuery.Version = 8; //3;
+	PrivateSourcesQuery.Version = PF_PRIVSOURCE_QUERY_REQUEST_VERSION; //3;
 
 	PfiBuildSuperfetchInfo(&SuperfetchInfo,
 		&PrivateSourcesQuery,
@@ -307,7 +308,7 @@ NTSTATUS PfiQueryPrivateSources() {
 		&ResultLength);
 	if (Status == STATUS_BUFFER_TOO_SMALL) {
 		MmPrivateSources = static_cast<PPF_PRIVSOURCE_QUERY_REQUEST>(::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ResultLength));
-		MmPrivateSources->Version = 8;
+		MmPrivateSources->Version = PF_PRIVSOURCE_QUERY_REQUEST_VERSION;
 
 		PfiBuildSuperfetchInfo(&SuperfetchInfo,
 			MmPrivateSources,
@@ -576,9 +577,15 @@ NTSTATUS PfiQueryPfnDatabase() {
 			//
 			// Get the process structure
 			//
-			PPF_PROCESS Process;
-		TryAgain:
-			Process = PfiFindProcess(Pfn1->u1.e4.UniqueProcessKey);
+			PPF_PROCESS Process = PfiFindProcess(Pfn1->u1.e4.UniqueProcessKey);
+			if (!Process)
+			{
+				//
+				//May be... The private sources changed during a query -- reload private sources
+				//
+				PfiQueryPrivateSources();
+				Process = PfiFindProcess(Pfn1->u1.e4.UniqueProcessKey);
+			}
 			if (Process) {
 				//
 				// Add this to the process' PFN array
@@ -602,13 +609,6 @@ NTSTATUS PfiQueryPfnDatabase() {
 				// One more PFN
 				//
 				Process->ProcessPfnCount++;
-			}
-			else {
-				//
-				// The private sources changed during a query -- reload private sources
-				//
-				PfiQueryPrivateSources();
-				goto TryAgain;
 			}
 		}
 	}

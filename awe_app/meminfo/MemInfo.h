@@ -89,6 +89,59 @@ typedef enum _MMLISTS {
 /*************************************************************/
 #define MMPFNUSE_SIZE		                                14
 
+/*
+typedef enum _SYSTEM_INFORMATION_CLASS {
+SystemBasicInformation =0,
+SystemProcessorInformation =1,
+SystemPerformanceInformation =2,
+SystemTimeOfDayInformation =3,
+SystemPathInformation =4,
+SystemProcessInformation =5,
+SystemCallCountInformation =6,
+SystemDeviceInformation =7,
+SystemProcessorPerformanceInformation =8,
+SystemFlagsInformation =9,
+SystemCallTimeInformation =10,
+SystemModuleInformation =11,
+SystemLocksInformation =12,
+SystemStackTraceInformation =13,
+SystemPagedPoolInformation =14,
+SystemNonPagedPoolInformation =15,
+SystemHandleInformation =16,
+SystemObjectInformation =17,
+SystemPageFileInformation = 18,
+SystemVdmInstemulInformation = 19,
+SystemVdmBopInformation = 20,
+SystemFileCacheInformation = 30,
+SystemPoolTagInformation = 31,
+SystemInterruptInformation = 32,
+SystemDpcBehaviorInformation = 33,
+SystemFullMemoryInformation = 34,
+SystemLoadGdiDriverInformation = 35,
+SystemUnloadGdiDriverInformation = 36,
+SystemTimeAdjustmentInformation = 37,
+SystemSummaryMemoryInformation = 38,
+SystemNextEventIdInformation = 39,
+SystemEventIdsInformation = 40,
+SystemCrashDumpInformation = 41,
+SystemExceptionInformation = 42,
+SystemCrashDumpStateInformation = 43,
+SystemKernelDebuggerInformation = 44,
+SystemContextSwitchInformation = 45,
+SystemRegistryQuotaInformation = 46,
+SystemExtendServiceTableInformation = 47,
+SystemPrioritySeperation = 48,
+SystemPlugPlayBusInformation = 49,
+SystemDockInformation = 50,
+SystemPowerInformation = 51,
+SystemProcessorSpeedInformation = 52,
+SystemCurrentTimeZoneInformation = 53,
+SystemLookasideInformation = 54
+
+
+} SYSTEM_INFORMATION_CLASS, *PSYSTEM_INFORMATION_CLASS
+*/
+
 //
 //  System Information Classes for NtQuerySystemInformation
 //
@@ -219,7 +272,9 @@ typedef struct _SYSTEM_MEMORY_LIST_INFORMATION {
 	SIZE_T BadPageCount;
 	SIZE_T PageCountByPriority[8];
 	SIZE_T RepurposedPagesByPriority[8];
+#ifdef WIN8
 	ULONG_PTR ModifiedPageCountPageFile;
+#endif
 } SYSTEM_MEMORY_LIST_INFORMATION, *PSYSTEM_MEMORY_LIST_INFORMATION;
 
 //
@@ -437,9 +492,17 @@ typedef struct _PF_PRIVSOURCE_INFO {
 //
 // Query Data Structure for SuperfetchPrivSourceQuery
 //
+#ifdef WIN8
+#define PF_PRIVSOURCE_QUERY_REQUEST_VERSION 8
+#else
+#define PF_PRIVSOURCE_QUERY_REQUEST_VERSION 3
+#endif // #ifdef WIN8
+
 typedef struct _PF_PRIVSOURCE_QUERY_REQUEST {
 	ULONG Version;
+#ifdef WIN8
 	ULONG Flags;
+#endif // #ifdef WIN8
 	ULONG InfoCount;
 	PF_PRIVSOURCE_INFO InfoArray[ANYSIZE_ARRAY];
 } PF_PRIVSOURCE_QUERY_REQUEST, *PPF_PRIVSOURCE_QUERY_REQUEST;
