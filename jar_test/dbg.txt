@@ -14,5 +14,7 @@ bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo Breakpoint hit; r 
 bp KERNELBASE!VirtualAlloc ".if ( @r8 > 0x0`0000ffff ) {.echo !!!Breakpoint hit!!!; r r8; gc} .else {gc}"
 
 bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r r8} .else {gc}"
-bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r rcx; r r8; dd rdx} .else {gc}"
 bp ntdll!NtQuerySystemInformation ".if ( @rcx = 0n79 ) {.echo Breakpoint hit; r rcx; r r8; dq rdx} .else {gc}"
+
+bp MemInfo_7!PfiQueryPrivateSources+0x15f ".if (poi(i) > 0x10) { dv i; dv info } .else {gc}"
+bp MemInfo_7!PfiQueryPrivateSources+0x1a8 ".if (poi(i) > 0x10) { dv i } .else {gc}"

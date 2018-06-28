@@ -260,36 +260,40 @@ NTSTATUS PfiQueryPrivateSources() {
 	//
 	// Loop the private sources
 	//
-	for (ULONG i = 0; i < g_MmPrivateSources->InfoCount; i++) {
+	const ULONG size = min(g_MmPrivateSources->InfoCount, (ResultLength - (sizeof(PPF_PRIVSOURCE_QUERY_REQUEST) - sizeof(g_MmPrivateSources->InfoArray))) / sizeof(PF_PRIVSOURCE_INFO));
+	for (ULONG i = 0; i < size; i++) {
 		//
 		// Make sure it's a process
 		//
-		if (g_MmPrivateSources->InfoArray[i].DbInfo.Type == PfsPrivateSourceProcess) {
+		const auto& info = g_MmPrivateSources->InfoArray[i];
+		const ULONG64 UniqueProcessKeyMask = 0xFFFF000000000000;
+		if ((info.DbInfo.Type == PfsPrivateSourceProcess) && ((ULONG64(info.EProcess) & UniqueProcessKeyMask) == UniqueProcessKeyMask)) {
 			//
 			// Do we already know about this process?
 			//
 			PPF_PROCESS Process;
 			CLIENT_ID ClientId;
 			OBJECT_ATTRIBUTES ObjectAttributes;
-			Process = PfiFindProcess(reinterpret_cast<ULONGLONG>(g_MmPrivateSources->InfoArray[i].EProcess));
+			Process = PfiFindProcess(reinterpret_cast<ULONGLONG>(info.EProcess));
 			if (!Process) {
 				//
 				// We don't, allocate it
 				//
+				auto numPages =info.NumberOfPrivatePages;
 				Process = static_cast<PPF_PROCESS>(::HeapAlloc(::GetProcessHeap(), 0, sizeof(PF_PROCESS) +
-					g_MmPrivateSources->InfoArray[i].NumberOfPrivatePages * sizeof(ULONG)));
+					numPages * sizeof(ULONG)));
 				InsertTailList(&g_MmProcessListHead, &Process->ProcessLinks);
 				g_MmProcessCount++;
 
 				//
 				// Set it up
 				//
-				Process->ProcessKey = reinterpret_cast<ULONGLONG>(g_MmPrivateSources->InfoArray[i].EProcess);
-				strncpy_s(Process->ProcessName, g_MmPrivateSources->InfoArray[i].ImageName, 16);
+				Process->ProcessKey = reinterpret_cast<ULONGLONG>(info.EProcess);
+				strncpy_s(Process->ProcessName, info.ImageName, 16);
 				Process->ProcessPfnCount = 0;
-				Process->PrivatePages = static_cast<ULONG>(g_MmPrivateSources->InfoArray[i].NumberOfPrivatePages);
-				Process->ProcessId = reinterpret_cast<HANDLE>(static_cast<ULONGLONG>(g_MmPrivateSources->InfoArray[i].DbInfo.ProcessId));
-				Process->SessionId = g_MmPrivateSources->InfoArray[i].SessionID;
+				Process->PrivatePages = static_cast<ULONG>(info.NumberOfPrivatePages);
+				Process->ProcessId = reinterpret_cast<HANDLE>(static_cast<ULONGLONG>(info.DbInfo.ProcessId));
+				Process->SessionId = info.SessionID;
 				Process->ProcessHandle = NULL;
 
 				//
@@ -482,7 +486,7 @@ int main() {
 			printf("%lld\n", ((g_MmPageUseCounts[MMPFNUSE_LARGEPAGE][ActiveAndValid] << PAGE_SHIFT) >> 10));
 #else
 			printf("%lld\n", ((g_MmPageUseCounts[MMPFNUSE_AWEPAGE][ActiveAndValid] << PAGE_SHIFT) >> 10));
-#endif	
+#endif
 		}
 	}
 

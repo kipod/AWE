@@ -62,7 +62,7 @@ void PfiBuildSuperfetchInfo(IN PSUPERFETCH_INFORMATION SuperfetchInfo, IN PVOID 
 	SuperfetchInfo->Magic = SUPERFETCH_MAGIC;
 	SuperfetchInfo->InfoClass = InfoClass;
 	SuperfetchInfo->Data = Buffer;
-	SuperfetchInfo->Length = Length;	
+	SuperfetchInfo->Length = Length;
 }
 
 NTSTATUS PfiQueryMemoryRanges() {
@@ -260,7 +260,7 @@ NTSTATUS PfSvFIGetHandle(OUT PHANDLE DeviceHandle) {
 	RtlInitUnicodeString(&DeviceString, L"\\Device\\FileInfo");
 	InitializeObjectAttributes(&ObjectAttributes, &DeviceString, OBJ_CASE_INSENSITIVE, NULL, NULL);
 
-	return NtOpenFile(DeviceHandle, 1179785, &ObjectAttributes, &IoStatusBlock, 7, 32);
+	return NtOpenFile(DeviceHandle, /*0x120089*/ READ_CONTROL| SYNCHRONIZE , &ObjectAttributes, &IoStatusBlock, 7, 32);
 }
 
 PPF_PROCESS PfiFindProcess(IN ULONGLONG UniqueProcessKey) {
@@ -327,36 +327,40 @@ NTSTATUS PfiQueryPrivateSources() {
 	//
 	// Loop the private sources
 	//
-	for (ULONG i = 0; i < MmPrivateSources->InfoCount; i++) {
+	const ULONG size = min(MmPrivateSources->InfoCount, (ResultLength - (sizeof(PPF_PRIVSOURCE_QUERY_REQUEST) - sizeof(MmPrivateSources->InfoArray))) / sizeof(PF_PRIVSOURCE_INFO));
+	for (ULONG i = 0; i < size; i++) {
 		//
 		// Make sure it's a process
 		//
-		if (MmPrivateSources->InfoArray[i].DbInfo.Type == PfsPrivateSourceProcess) {
+		const auto& info = MmPrivateSources->InfoArray[i];
+		const ULONG64 UniqueProcessKeyMask = 0xFFFF000000000000;
+		if ((info.DbInfo.Type == PfsPrivateSourceProcess) && ((ULONG64(info.EProcess) & UniqueProcessKeyMask) == UniqueProcessKeyMask)) {
 			//
 			// Do we already know about this process?
 			//
 			PPF_PROCESS Process;
 			CLIENT_ID ClientId;
 			OBJECT_ATTRIBUTES ObjectAttributes;
-			Process = PfiFindProcess(reinterpret_cast<ULONGLONG>(MmPrivateSources->InfoArray[i].EProcess));
+			Process = PfiFindProcess(reinterpret_cast<ULONGLONG>(info.EProcess));
 			if (!Process) {
 				//
 				// We don't, allocate it
 				//
+				auto numPages =info.NumberOfPrivatePages;
 				Process = static_cast<PPF_PROCESS>(::HeapAlloc(::GetProcessHeap(), 0, sizeof(PF_PROCESS) +
-					MmPrivateSources->InfoArray[i].NumberOfPrivatePages * sizeof(ULONG)));
+					numPages * sizeof(ULONG)));
 				InsertTailList(&MmProcessListHead, &Process->ProcessLinks);
 				MmProcessCount++;
 
 				//
 				// Set it up
 				//
-				Process->ProcessKey = reinterpret_cast<ULONGLONG>(MmPrivateSources->InfoArray[i].EProcess);
-				strncpy_s(Process->ProcessName, MmPrivateSources->InfoArray[i].ImageName, 16);
+				Process->ProcessKey = reinterpret_cast<ULONGLONG>(info.EProcess);
+				strncpy_s(Process->ProcessName, info.ImageName, 16);
 				Process->ProcessPfnCount = 0;
-				Process->PrivatePages = static_cast<ULONG>(MmPrivateSources->InfoArray[i].NumberOfPrivatePages);
-				Process->ProcessId = reinterpret_cast<HANDLE>(static_cast<ULONGLONG>(MmPrivateSources->InfoArray[i].DbInfo.ProcessId));
-				Process->SessionId = MmPrivateSources->InfoArray[i].SessionID;
+				Process->PrivatePages = static_cast<ULONG>(info.NumberOfPrivatePages);
+				Process->ProcessId = reinterpret_cast<HANDLE>(static_cast<ULONGLONG>(info.DbInfo.ProcessId));
+				Process->SessionId = info.SessionID;
 				Process->ProcessHandle = NULL;
 
 				//
@@ -1046,7 +1050,7 @@ int main(int argc, const char* argv[]) {
 	status = PfSvFIGetHandle(&PfiFileInfoHandle);
 	if (!NT_SUCCESS(status)) {
 		printf("Failure initializing File Info connection: %lx\n", status);
-		return 1;
+		//return 1;
 	}
 
 	if (ShowAll || ShowSummary || ShowVirtual || ShowPage || ShowCache || ShowWs || ShowProcess || ShowUsage) {
