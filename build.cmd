@@ -10,8 +10,8 @@ cmake "%~dp0\awe_app" -G %CMAKE_GEN%
 IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cmake --build . --config Release
 IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-cmake --build . --config Debug
-IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+::cmake --build . --config Debug
+::IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 ::cmake --open .
 popd
 
