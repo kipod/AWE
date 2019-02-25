@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("awe_try")
 
-# use static linked CRT
+# avoid use dynamic load CRT
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -17,6 +17,10 @@ set(CompilerFlags
 foreach(CompilerFlag ${CompilerFlags})
   string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 endforeach()
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+
 
 # Include sub-projects.
 add_subdirectory ("awe_try")
