@@ -6,20 +6,36 @@
 
 #include "awe_try.h"
 
-const SIZE_T MEMORY_REQUESTED = 1234564LL * 1024; // request memory in bytes
+const SIZE_T MEGA_PAGE_BYTES = 4 * 1024 * 1024;  // haw many bytes takes 1 mega pages
+const SIZE_T MEMORY_REQUESTED = 1024LL * MEGA_PAGE_BYTES; // request memory in bytes
 
 bool loggedSetLockPagesPrivilege(HANDLE hProcess, bool bEnable);
 
-int main()
+int main(int argc, char *argv[])
 {
-	SYSTEM_INFO sSysInfo = {};   // useful system information	
+	SIZE_T allocated_size = MEMORY_REQUESTED;
+	if(argc > 1) {
+		if (atoi(argv[1]) <= 0){
+			_tprintf(_T("Wrong argument '%s'. It must be UINT value.\n"), argv[1]);
+			return -1;
+		}
+		allocated_size = atoi(argv[1]) * MEGA_PAGE_BYTES;
+		_tprintf(_T("Try to allocate %lld bytes (%lld mega pages) required by command line argument.\n"), allocated_size, allocated_size/MEGA_PAGE_BYTES);
+	} else {
+		if(argc == 1) {
+			_tprintf(_T("Usage: \n\t%s [number of mega pages]\n"), argv[0]);
+		}
+		_tprintf(_T("Try to allocate default %lld (%lld mega pages)\n"), allocated_size, allocated_size/MEGA_PAGE_BYTES);
+	}
+
+	SYSTEM_INFO sSysInfo = {};   // useful system information
 	::GetSystemInfo(&sSysInfo);  // fill the system information structure
 
 	_tprintf(_T("This computer has page size %d.\n"), sSysInfo.dwPageSize);
 
 	// Calculate the number of pages of memory to request.
 
-	ULONG_PTR numberOfPages = MEMORY_REQUESTED / sSysInfo.dwPageSize; // number of pages to request
+	ULONG_PTR numberOfPages = allocated_size / sSysInfo.dwPageSize; // number of pages to request
 	_tprintf(_T("Requesting %I64u pages of memory.\n"), numberOfPages);
 
 	// Calculate the size of the user PFN array.
@@ -64,7 +80,7 @@ int main()
 
 	// Reserve the virtual memory.
 	PVOID lpMemReserved = ::VirtualAlloc(NULL,
-		MEMORY_REQUESTED,
+		allocated_size,
 		MEM_RESERVE | MEM_PHYSICAL,
 		PAGE_READWRITE);
 	if (lpMemReserved == NULL)
@@ -85,8 +101,11 @@ int main()
 	// 	return int(dwErr);
 	// }
 
-	_tprintf(_T("Looks like everything - OK\n Press enter...\n"));
-	::getchar();
+	_tprintf(_T("Looks like everything - OK\n"));
+	if(argc <= 1) {
+		_tprintf(_T("\tPress enter...\n"));
+		::getchar();
+	}
 
 	// unmap
 	bResult = ::MapUserPhysicalPages(lpMemReserved,
@@ -125,7 +144,7 @@ int main()
 		_tprintf(_T("Call to HeapFree has failed (%u)\n"), dwErr);
 		return int(dwErr);
 	}
-	
+
 	return 0;
 }
 
@@ -151,7 +170,7 @@ bool loggedSetLockPagesPrivilege(HANDLE hProcess, bool bEnable)
 	} Info;
 
 	HANDLE hToken = INVALID_HANDLE_VALUE;
-	
+
 	// Open the token.
 	BOOL bResult = OpenProcessToken(hProcess,
 		TOKEN_ADJUST_PRIVILEGES,
